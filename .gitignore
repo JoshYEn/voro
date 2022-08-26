@@ -1,0 +1,10 @@
+*.dat
+
+*.o
+*.a
+
+.vscode
+
+*.gnu
+*.pov
+*.png
