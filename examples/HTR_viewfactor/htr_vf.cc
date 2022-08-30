@@ -324,7 +324,8 @@ int main() {
 			double xj = 0, yj = 0, zj = 0;
 			bool isNeighFound = false;
 			// printf("%d, %d\n", pid, neigh[j]);
-			if(cl2.start()) do if (con.compute_cell(c2,cl2)) {
+			// if(cl2.start()) do if (con.compute_cell(c2,cl2)) {
+			if(cl2.start()) do {
 				if (neigh[j]<0) { isNeighFound = true; break; }
 				if (cl2.pid() == neigh[j]) {
 					cl2.pos(xj, yj, zj);
@@ -368,7 +369,7 @@ int main() {
 		// printf("TOTAL VIEW FACTOR FOR FACE: %g\n", V1_all);
 		fprintf(f4, "%.19f\n", V1_all);
 
-		if (index == 1000) exit(1);
+		// if (index == 1000) exit(1);
 	} while (cl.inc());
 
 	fclose(f1);
