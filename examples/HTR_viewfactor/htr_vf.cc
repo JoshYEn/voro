@@ -46,16 +46,6 @@ int main() {
 	// Import the particles from a file
 	con.import("pebble_pos.dat");
 
-	//-Custom output routines.
-	// Do a custom output routine to store packing statistics
-	con.print_custom(
-		// %i: ID
-		// %q: The position vector of the particle, short for “%x %y %z”.
-		// %v: The volume of the Voronoi cell.
-		"ID=%i, pos=(%x,%y,%z), volume=%v", "packing_statistics.dat");
-
-	// con.print_custom("%i %q %v", "packing_statistics_MATLAB.dat");
-
 	// Output the particle positions and Voronoi cells in Gnuplot format
 	// con.draw_particles("cylinder_p.gnu");
 	// con.draw_cells_gnuplot("cylinder_v.gnu");
@@ -67,7 +57,8 @@ int main() {
 	// File Handler ==================================================
 	FILE *f1=safe_fopen("viewfactor_result.dat","w");
 	// Headers
-	fprintf(f1, "id     x      y      z      id2    face_a\n");
+	fprintf(f1, "id1     id2     d                   VF1                   VF2\n");
+	FILE *f4=safe_fopen("view_factor_peb.dat", "w");
 	// write temp cell vertices and face vertices
 	FILE *f2=safe_fopen("temp_voronoi_vertices.dat","w");
 	FILE *f3=safe_fopen("temp_voronoi_facevtid.dat","w");
@@ -75,12 +66,19 @@ int main() {
 	int pid;
 	double x,y,z;
 	c_loop_all cl(con);
+	c_loop_all cl2(con);
 	voronoicell_neighbor c;
+	voronoicell c2;
 	std::vector<int> neigh, fvt, fo;
 	std::vector<double> vt;
 	std::vector<double> face_areas, face_normals;
 
+	printf("%d\n", con.total_particles());
+
+	int index = 0;
+
 	if(cl.start()) do if(con.compute_cell(c,cl)) {
+		index++;
 		// Get particle position & pid
 		cl.pos(x,y,z); pid = cl.pid();
 
@@ -93,24 +91,21 @@ int main() {
 		c.face_orders(fo);
 
 		// Print out the information about neighbors
-		printf("Particle %d: \n", pid);
-		printf("Number of neighbours: %lu\n", neigh.size());
-		printf("Number of faces: %d\n", c.number_of_faces());
-		puts("");
+		printf("Particle %d - %d: ", index, pid);
+		printf("; Number of faces: %d\n", c.number_of_faces());
 
 		// Face Area
-		// printf("face_areas[0]: %f\n", face_areas[0]);
-		printf("Output Face areas:\n");
-		c.output_face_areas();
-		puts("");
-		puts("");
+		// printf("Output Face areas:\n");
+		// c.output_face_areas();
+		// puts("");
+		// puts("");
 
 		// Vertices
-		printf("Number of vertices: %lu\n", vt.size());
-		printf("Output Vertices:\n");
-		c.output_vertices();
-		puts("");
-		puts("");
+		// printf("Number of vertices: %lu\n", vt.size());
+		// printf("Output Vertices:\n");
+		// c.output_vertices();
+		// puts("");
+		// puts("");
 		// Output Vertices to F2
 		for (unsigned int tmp_i = 0; tmp_i < vt.size()/3; tmp_i++) {
 			fprintf(f2, "%d %.18f %.18f %.18f\n", tmp_i, vt[tmp_i*3], vt[tmp_i*3+1], vt[tmp_i*3+2]);
@@ -118,10 +113,10 @@ int main() {
 		fprintf(f2, "%d %.18f %.18f %.18f\n", pid, x, y, z);
 
 		// Face Vertices
-		printf("Number of face vertices size: %lu\n", fvt.size());
-		c.output_face_vertices();
-		puts("");
-		puts("");
+		// printf("Number of face vertices size: %lu\n", fvt.size());
+		// c.output_face_vertices();
+		// puts("");
+		// puts("");
 		// Output Face Vertices to F3
 		int tmp_count = 0;
 		int num_vertices = 0;
@@ -137,14 +132,14 @@ int main() {
 		}
 
 		// Face Orders
-		printf("Number of face orders: %lu\n", fo.size());
-		c.output_face_orders();
-		puts("");
-		puts("");
+		// printf("Number of face orders: %lu\n", fo.size());
+		// c.output_face_orders();
+		// puts("");
+		// puts("");
 
-		printf("====================================================================\n");
 		// 获取表面面积向量
 
+		double V1_all = 0;
 		int tmp = 0; // index for Face Vertices
 		// 循环每个面
 		for(unsigned int j=0;j<neigh.size();j++) {
@@ -156,21 +151,45 @@ int main() {
 			kk = j*3+2;
 
 			// Calculate Y L H;
-			double Y, H, V;
-			printf("vertices of current face: %d\n", fo[j]);
+			double Y, H, V1 = 0, V2 = 0;
+			// printf("vertices of current face: %d\n", fo[j]);
 
 			// Calculate plane equation (face) ================================================================
 			// params: A B C D
-			printf("Getting plane using Vertice: %d, %d, %d\n", fvt[tmp+2], fvt[tmp+3], fvt[tmp+4]);
-			double x1 = vt[fvt[tmp+2]*3];
-			double y1 = vt[fvt[tmp+2]*3+1];
-			double z1 = vt[fvt[tmp+2]*3+2];
-			double x2 = vt[fvt[tmp+3]*3];
-			double y2 = vt[fvt[tmp+3]*3+1];
-			double z2 = vt[fvt[tmp+3]*3+2];
-			double x3 = vt[fvt[tmp+4]*3];
-			double y3 = vt[fvt[tmp+4]*3+1];
-			double z3 = vt[fvt[tmp+4]*3+2];
+			// printf("Getting plane using Vertice: %d, %d, %d\n", fvt[tmp+2], fvt[tmp+3], fvt[tmp+4]);
+			int id_f1, id_f2, id_f3;
+			if (fo[j] > 3)
+			{
+				id_f1 = tmp + 2;
+				id_f2 = tmp + 3;
+				id_f3 = tmp + 4;
+			}
+			else if (fo[j] == 3)
+			{
+				id_f1 = tmp + 1;
+				id_f2 = tmp + 2;
+				id_f3 = tmp + 3;
+			}
+			else
+			{
+				printf("vertices number of face is error!\n");
+				exit(1);
+			}
+
+			// if no normal vec
+			if (fmax(fmax(fabs(face_normals[ii]), fabs(face_normals[jj])), fabs(face_normals[kk])) < 1e-5) {
+				tmp += fo[j]+1;
+				continue;
+			}
+			double x1 = vt[fvt[id_f1]*3];
+			double y1 = vt[fvt[id_f1]*3+1];
+			double z1 = vt[fvt[id_f1]*3+2];
+			double x2 = vt[fvt[id_f2]*3];
+			double y2 = vt[fvt[id_f2]*3+1];
+			double z2 = vt[fvt[id_f2]*3+2];
+			double x3 = vt[fvt[id_f3]*3];
+			double y3 = vt[fvt[id_f3]*3+1];
+			double z3 = vt[fvt[id_f3]*3+2];
 			// Plane params
 			double A = ( (y2 - y1) * (z3 - z1) - (z2 - z1) * (y3 - y1) );
 			double B = ( (z2 - z1) * (x3 - x1) - (x2 - x1) * (z3 - z1) );
@@ -178,19 +197,21 @@ int main() {
 			double D = ( 0 - (A * x1 + B * y1 + C * z1) );
 
 			// check error with internal face normals
-			double err_a = fabs(A / sqrt(A*A+B*B+C*C) + face_normals[ii]);
-			double err_b = fabs(B / sqrt(A*A+B*B+C*C) + face_normals[jj]);
-			double err_c = fabs(C / sqrt(A*A+B*B+C*C) + face_normals[kk]);
-			if (fmax(fabs(err_a), fmax(fabs(err_b), fabs(err_c))) > 1e-10) {
+			double err_a0 = fabs(A / sqrt(A*A+B*B+C*C) + face_normals[ii]);
+			double err_a1 = fabs(A / sqrt(A*A+B*B+C*C) - face_normals[ii]);
+			double err_b0 = fabs(B / sqrt(A*A+B*B+C*C) + face_normals[jj]);
+			double err_b1 = fabs(B / sqrt(A*A+B*B+C*C) - face_normals[jj]);
+			double err_c0 = fabs(C / sqrt(A*A+B*B+C*C) + face_normals[kk]);
+			double err_c1 = fabs(C / sqrt(A*A+B*B+C*C) - face_normals[kk]);
+			if (fmax(fmin(err_a0, err_a1), fmax(fmin(err_b0, err_b1), fmin(err_c0, err_c1))) > 1e-10) {
+				printf("ERROR on face %d\n", j);
+				printf("vertices id: %d, %d, %d, ...\n", fvt[id_f1], fvt[id_f2], fvt[id_f3]);
 				printf("Normal Vector (inter): (%f, %f, %f)\n", face_normals[ii], face_normals[jj], face_normals[kk]);
 				printf("Normal Vector (pt123): (%f, %f, %f)\n", A / sqrt(A*A+B*B+C*C),
 												  B / sqrt(A*A+B*B+C*C),
 												  C / sqrt(A*A+B*B+C*C));
-				printf("Normal Vector diff   : (%g, %g, %g)\n", err_a, err_b, err_c);
 				printf("Normal Vector diff is too large!\n");
 				exit(1);
-			} else {
-				printf("Normal Vector of face correct!\n");
 			}
 
 			H = fabs(A * x + B * y + C * z + D) / sqrt(A * A + B * B + C * C);
@@ -213,23 +234,19 @@ int main() {
 				p_z = C / sqrt(A*A+B*B+C*C)*H + z;
 				testp = A*p_x + B*p_y + C*p_z + D;
 			}
-			printf("Projection point of sphere center: (%f, %f, %f)\n", p_x, p_y, p_z);
-			if (fabs(testp) > 1e-15) {
+			if (fabs(testp) > 1e-10) {
+				printf("Projection point of sphere center: (%f, %f, %f)\n", p_x, p_y, p_z);
 				printf("check if projection pt on plane: %g\n", testp);
 				printf("Projection pt is not on the plane!\n");
 				exit(1);
-			} else {
-				printf("Projection point correct!\n");
 			}
 
 			// double test1 = A*vt[fvt[tmp+4]*3] + B*vt[fvt[tmp+4]*3+1] + C*vt[fvt[tmp+4]*3+2] + D;
 			double test1 = A*vt[fvt[tmp+1]*3] + B*vt[fvt[tmp+1]*3+1] + C*vt[fvt[tmp+1]*3+2] + D;
-			if (fabs(test1) > 1e-15) {
+			if (fabs(test1) > 1e-10) {
 				printf("check if First point on plane : %g\n", test1);
 				printf("First point is not on the plane!\n");
 				exit(1);
-			} else {
-				printf("First point correct!\n");
 			}
 
 
@@ -240,7 +257,7 @@ int main() {
 				int pt_1 = 1;
 				int pt_2 = l+1;
 				int pt_3 = l+2;
-				printf("calculating triangle: %d, %d, %d\n", fvt[tmp+pt_1], fvt[tmp+pt_2], fvt[tmp+pt_3]);
+				// printf("calculating triangle: %d, %d, %d\n", fvt[tmp+pt_1], fvt[tmp+pt_2], fvt[tmp+pt_3]);
 				double tmp_a = sqrt(pow(vt[fvt[tmp+pt_1]*3+0] - vt[fvt[tmp+pt_2]*3+0], 2) +
 								    pow(vt[fvt[tmp+pt_1]*3+1] - vt[fvt[tmp+pt_2]*3+1], 2) +
 								    pow(vt[fvt[tmp+pt_1]*3+2] - vt[fvt[tmp+pt_2]*3+2], 2));
@@ -258,17 +275,12 @@ int main() {
 			// printf("face area (internal)        : %f\n", face_areas[j]);
 			if (fabs(tmp_s_all - face_areas[j]) > 1e-15) {
 				printf("face area error: %f\n", tmp_s_all - face_areas[j]);
-			} else {
-				printf("Face area correct!\n");
 			}
-
-
-			puts("");
 
 
 			// 循环每个顶点 =========================================================================================
 			// params: a, b, c, p, S, total_s
-			printf("iterating over vertices:\n");
+			// printf("iterating over vertices:\n");
 			int k;
 			double total_s = 0;
 			for(k=1;k<=fo[j];k++) {
@@ -290,7 +302,7 @@ int main() {
 				tmp_c = sqrt(pow(vt[iii] - vt[iiin], 2) +pow(vt[jjj] - vt[jjjn], 2) + pow(vt[kkk] - vt[kkkn], 2));
 				double tmp_p = 0.5*(tmp_a+tmp_b+tmp_c);
 				double tmp_s = sqrt(tmp_p*(tmp_p-tmp_a)*(tmp_p-tmp_b)*(tmp_p-tmp_c));
-				printf("area, %f\n", tmp_s);
+				// printf("area, %f\n", tmp_s);
 				total_s += tmp_s;
 
 				Y = tmp_s*2.0/tmp_c;
@@ -298,22 +310,69 @@ int main() {
 				double B1, B3;
 				B1 = Y/H;
 				B3 = tmp_a/Y;
-				V = 0.25/pi*acos(1/B3)-0.125/pi*asin( ((1-pow(B1,2))*pow(B3,2)-2) / ((1+pow(B1,2))*pow(B3,2)) );
+				V1 += 0.25/pi*acos(1/B3)-1.0/8.0/pi*asin( ((1.-pow(B1,2))*pow(B3,2)-2.) / ((1.+pow(B1,2))*pow(B3,2)) ) - 1./16.;
+
+				B3 = tmp_b/Y;
+				V1 += 0.25/pi*acos(1/B3)-1.0/8.0/pi*asin( ((1.-pow(B1,2))*pow(B3,2)-2.) / ((1.+pow(B1,2))*pow(B3,2)) ) - 1./16.;
 			}
+
+			if (neigh[j] > 0)	V1_all += V1;
+
+			// 用方法2计算角系数
+			double xj = 0, yj = 0, zj = 0;
+			bool isNeighFound = false;
+			// printf("%d, %d\n", pid, neigh[j]);
+			if(cl2.start()) do if (con.compute_cell(c2,cl2)) {
+				if (neigh[j]<0) { isNeighFound = true; break; }
+				if (cl2.pid() == neigh[j]) {
+					cl2.pos(xj, yj, zj);
+					isNeighFound = true;
+					break;
+				}
+			} while (cl2.inc());
+			if (!isNeighFound) {
+				printf("NEIGH NOT FOUND!\n");
+				exit(1);
+			}
+			// printf("pos: (%g, %g, %g)\n", xj, yj, zj);
+			double L = 0;
+			if (neigh[j] > 0) {
+				double R = 0.03;
+				// printf("neigh pos: (%g, %g, %g)\n", xj, yj, zj);
+				L = sqrt(pow(x - xj, 2) + pow(y - yj, 2) + pow(z - zj, 2));
+				double d_max = 0.5 * sqrt(1 + (4.0 * face_areas[j] / pi / L/L));
+				double cita_im = acos(0.5 / (d_max));
+				double L_prime = L - R*cos(cita_im) - R*cos(cita_im) ;
+				double R_prime = R * sin(cita_im);
+				double Z = 5 + L_prime*L_prime / R_prime / R_prime;
+				double F_ij_prime = 0.5 * (Z - sqrt(Z*Z - 4));
+				V2 = (1+cos(cita_im)) / 2.0 * F_ij_prime;
+			}
+
+			fprintf(f1, "%6d, %6d, %.18f, %.18f, %.18f\n", pid, neigh[j], L, V1, V2);
 			tmp += k;
-			// printf("tmp var: %d\n", tmp);
-			printf("face area (internal): %f\n", face_areas[j]);
-			printf("face area (me)      : %f\n", total_s);
-			printf("-------------------------------------");
-			puts("");
+			// printf("face area (internal): %g\n", face_areas[j]);
+			// printf("face area (me)      : %g\n", total_s);
+			// if (fabs(total_s - face_areas[j]) > 1e-10) {
+			// 	printf("face area error: %g\n", total_s - face_areas[j]);
+			// 	printf("face area (internal): %g\n", face_areas[j]);
+			// 	printf("face area (me)      : %g\n", total_s);
+			// 	printf("-------------------------------------\n");
+			// }
 
 			// if (j == 2) break;
 		}
 
-		break;
+		// printf("TOTAL VIEW FACTOR FOR FACE: %g\n", V1_all);
+		fprintf(f4, "%.19f\n", V1_all);
+		// printf("====================================================================\n");
+		// puts("");
+
+		// break;
 	} while (cl.inc());
 
 	fclose(f1);
 	fclose(f2);
 	fclose(f3);
+	fclose(f4);
 }
