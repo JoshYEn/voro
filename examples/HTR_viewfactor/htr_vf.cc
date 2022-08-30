@@ -91,8 +91,10 @@ int main() {
 		c.face_orders(fo);
 
 		// Print out the information about neighbors
-		printf("Particle %d - %d: ", index, pid);
-		printf("; Number of faces: %d\n", c.number_of_faces());
+		if (index % 100 == 0) {
+			printf("Particle %d - %d: ", index, pid);
+			printf("Number of faces: %d\n", c.number_of_faces());
+		}
 
 		// Face Area
 		// printf("Output Face areas:\n");
@@ -106,30 +108,30 @@ int main() {
 		// c.output_vertices();
 		// puts("");
 		// puts("");
-		// Output Vertices to F2
-		for (unsigned int tmp_i = 0; tmp_i < vt.size()/3; tmp_i++) {
-			fprintf(f2, "%d %.18f %.18f %.18f\n", tmp_i, vt[tmp_i*3], vt[tmp_i*3+1], vt[tmp_i*3+2]);
-		}
-		fprintf(f2, "%d %.18f %.18f %.18f\n", pid, x, y, z);
+		// Output Vertices to F2 FILE
+		// for (unsigned int tmp_i = 0; tmp_i < vt.size()/3; tmp_i++) {
+		// 	fprintf(f2, "%d %.18f %.18f %.18f\n", tmp_i, vt[tmp_i*3], vt[tmp_i*3+1], vt[tmp_i*3+2]);
+		// }
+		// fprintf(f2, "%d %.18f %.18f %.18f\n", pid, x, y, z);
 
 		// Face Vertices
 		// printf("Number of face vertices size: %lu\n", fvt.size());
 		// c.output_face_vertices();
 		// puts("");
 		// puts("");
-		// Output Face Vertices to F3
-		int tmp_count = 0;
-		int num_vertices = 0;
-		for (unsigned int tmp_i = 0; tmp_i < fvt.size(); tmp_i++) {
-			if (tmp_count == 0) num_vertices = fvt[tmp_i];
-			if (tmp_count < num_vertices) {
-				fprintf(f3, "%d ", fvt[tmp_i]);
-				tmp_count++;
-			} else {
-				fprintf(f3, "%d\n", fvt[tmp_i]);
-				tmp_count = 0;
-			}
-		}
+		// Output Face Vertices to F3 FILE
+		// int tmp_count = 0;
+		// int num_vertices = 0;
+		// for (unsigned int tmp_i = 0; tmp_i < fvt.size(); tmp_i++) {
+		// 	if (tmp_count == 0) num_vertices = fvt[tmp_i];
+		// 	if (tmp_count < num_vertices) {
+		// 		fprintf(f3, "%d ", fvt[tmp_i]);
+		// 		tmp_count++;
+		// 	} else {
+		// 		fprintf(f3, "%d\n", fvt[tmp_i]);
+		// 		tmp_count = 0;
+		// 	}
+		// }
 
 		// Face Orders
 		// printf("Number of face orders: %lu\n", fo.size());
@@ -365,10 +367,8 @@ int main() {
 
 		// printf("TOTAL VIEW FACTOR FOR FACE: %g\n", V1_all);
 		fprintf(f4, "%.19f\n", V1_all);
-		// printf("====================================================================\n");
-		// puts("");
 
-		// break;
+		if (index == 1000) exit(1);
 	} while (cl.inc());
 
 	fclose(f1);

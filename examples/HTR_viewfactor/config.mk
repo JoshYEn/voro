@@ -11,7 +11,7 @@
 CXX?=g++
 
 # Flags for the C++ compiler
-CFLAGS+=-Wall -ansi -pedantic -O0 -g
+CFLAGS+=-Wall -ansi -pedantic -O0 -g -pg
 
 # Relative include and library paths for compilation of the examples
 T_INC=-I../../src
