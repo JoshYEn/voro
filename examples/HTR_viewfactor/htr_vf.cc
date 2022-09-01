@@ -57,7 +57,7 @@ int main() {
 	// File Handler ==================================================
 	FILE *f1=safe_fopen("viewfactor_result.dat","w");
 	// Headers
-	fprintf(f1, "id1     id2     d                   VF1                   VF2\n");
+	fprintf(f1, "id1     id2     d                     VF1                   Ai                    VF2\n");
 	FILE *f4=safe_fopen("view_factor_peb.dat", "w");
 	// write temp cell vertices and face vertices
 	FILE *f2=safe_fopen("temp_voronoi_vertices.dat","w");
@@ -339,6 +339,7 @@ int main() {
 			}
 			// printf("pos: (%g, %g, %g)\n", xj, yj, zj);
 			double L = 0;
+			double Ai = 0;
 			if (neigh[j] > 0) {
 				double R = 0.03;
 				// printf("neigh pos: (%g, %g, %g)\n", xj, yj, zj);
@@ -348,21 +349,27 @@ int main() {
 				}
 				// double d_max = 0.5 * sqrt(1 + (4.0 * face_areas[j]) / (pi*L*L));
 				// double cos_cita = 0.5 / (d_max);
-				double cos_cita = sqrt(pi*L*L / (4.0*face_areas[j] + pi*L*L));
+				double cos_cita = sqrt(pi*L*L / (4*face_areas[j] + pi*L*L));
 				double sin_cita = sqrt(1 - cos_cita*cos_cita);
 				double L_prime = L - R*cos_cita - R*cos_cita ;
 				if (L_prime < 0) printf("L_prime < 0, %f\n", L_prime);
 				double R_prime = R * sin_cita;
-				// double Z = 5 + L_prime*L_prime / R_prime / R_prime;
-				// double F_ij_prime = 0.5 * (Z - sqrt(Z*Z - 4));
-				double RR = R_prime / (L_prime + R*cos_cita);
-				double F_ij_prime = 0.5 * (1 - sqrt(1.0 / (1.0 + RR*RR)));
+				double Z = 2 + L_prime*L_prime / R_prime / R_prime;
+				double F_ij_prime = 0.5 * (Z - sqrt(Z*Z - 4));
 				V2 = (1+cos_cita) / 2.0 * F_ij_prime;
+				// V2 = (pi*R_prime*R_prime) / face_areas[j] * F_ij_prime;
+				// printf("Ai_p/Ai, method1: %g, method2: %g\n", (1+cos_cita) / 2.0, (pi*R_prime*R_prime) / face_areas[j]);
+
+				// double RR = R_prime / L_prime;
+				// F_ij_prime = 1.0+(1.-sqrt(4*RR*RR+1))/2/RR/RR;
+				// V2 = (1+cos_cita) / 2.0 * F_ij_prime;
+
+				Ai = 2*pi*R*R*(1-cos_cita);
 			}
 
 			if (neigh[j] > 0)	V2_all += V2;
 
-			fprintf(f1, "%6d, %6d, %.18f, %.18f, %.18f\n", pid, neigh[j], L, V1, V2);
+			fprintf(f1, "%6d, %6d, %.18f, %.18f, %.18f, %.18f\n", pid, neigh[j], L, V1, Ai, V2);
 			tmp += k;
 			// printf("face area (internal): %g\n", face_areas[j]);
 			// printf("face area (me)      : %g\n", total_s);
