@@ -141,7 +141,7 @@ int main() {
 
 		// 获取表面面积向量
 
-		double V1_all = 0;
+		double V1_all = 0, V2_all = 0;
 		int tmp = 0; // index for Face Vertices
 		// 循环每个面
 		for(unsigned int j=0;j<neigh.size();j++) {
@@ -343,20 +343,30 @@ int main() {
 				double R = 0.03;
 				// printf("neigh pos: (%g, %g, %g)\n", xj, yj, zj);
 				L = sqrt(pow(x - xj, 2) + pow(y - yj, 2) + pow(z - zj, 2));
-				double d_max = 0.5 * sqrt(1 + (4.0 * face_areas[j] / pi / L/L));
-				double cita_im = acos(0.5 / (d_max));
-				double L_prime = L - R*cos(cita_im) - R*cos(cita_im) ;
-				double R_prime = R * sin(cita_im);
-				double Z = 5 + L_prime*L_prime / R_prime / R_prime;
-				double F_ij_prime = 0.5 * (Z - sqrt(Z*Z - 4));
-				V2 = (1+cos(cita_im)) / 2.0 * F_ij_prime;
+				if (L < 0.059) {
+					printf("ERR - short distance found: %g\n", L);
+				}
+				// double d_max = 0.5 * sqrt(1 + (4.0 * face_areas[j]) / (pi*L*L));
+				// double cos_cita = 0.5 / (d_max);
+				double cos_cita = sqrt(pi*L*L / (4.0*face_areas[j] + pi*L*L));
+				double sin_cita = sqrt(1 - cos_cita*cos_cita);
+				double L_prime = L - R*cos_cita - R*cos_cita ;
+				if (L_prime < 0) printf("L_prime < 0, %f\n", L_prime);
+				double R_prime = R * sin_cita;
+				// double Z = 5 + L_prime*L_prime / R_prime / R_prime;
+				// double F_ij_prime = 0.5 * (Z - sqrt(Z*Z - 4));
+				double RR = R_prime / (L_prime + R*cos_cita);
+				double F_ij_prime = 0.5 * (1 - sqrt(1.0 / (1.0 + RR*RR)));
+				V2 = (1+cos_cita) / 2.0 * F_ij_prime;
 			}
+
+			if (neigh[j] > 0)	V2_all += V2;
 
 			fprintf(f1, "%6d, %6d, %.18f, %.18f, %.18f\n", pid, neigh[j], L, V1, V2);
 			tmp += k;
 			// printf("face area (internal): %g\n", face_areas[j]);
 			// printf("face area (me)      : %g\n", total_s);
-			// if (fabs(total_s - face_areas[j]) > 1e-10) {
+			// if (fabs(total_s - face_areas[j]) > 1e-5) {
 			// 	printf("face area error: %g\n", total_s - face_areas[j]);
 			// 	printf("face area (internal): %g\n", face_areas[j]);
 			// 	printf("face area (me)      : %g\n", total_s);
@@ -367,9 +377,10 @@ int main() {
 		}
 
 		// printf("TOTAL VIEW FACTOR FOR FACE: %g\n", V1_all);
-		fprintf(f4, "%.19f\n", V1_all);
+		// fprintf(f4, "%.19f\n", V1_all);
+		fprintf(f4, "%g, %g\n", V1_all, V2_all);
 
-		// if (index == 1000) exit(1);
+		// if (index == 10) exit(1);
 	} while (cl.inc());
 
 	fclose(f1);

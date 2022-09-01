@@ -1,5 +1,7 @@
 clc; clear; close all;
 
+inp_file = "viewfactor_result.dat";
+out_file = "Radiation_InitVF_Prefs.txt";
 
 %% ------------------------------------------------------------------------
 d = 1:0.1:8;
@@ -42,7 +44,7 @@ hold on
 
 
 %% ------------------------------------------------------------------------
-data = importdata("viewfactor_result.dat");
+data = importdata(inp_file);
 data = data.data(data.data(:,2) > 0, :);
 
 % vf_voro = data(:, 5);
@@ -66,11 +68,29 @@ end
 scatter(d_voro, vf_voro, Marker="+", MarkerEdgeColor="Black")
 
 
-fileID = fopen("viewfactor_result_optimized.dat", "w");
+fileID = fopen(out_file, "w");
+fprintf(fileID, "%d\n", length(d_voro));
 for i=1:length(d_voro)
-    fprintf(fileID, "%d %d %.18f %.18f\n", data(i, 1), data(i, 2), d_voro(i), vf_voro(i));
+    if (data(i,1) < data(i,2))
+        fprintf(fileID, "%d %d %.18f %.18f\n", data(i, 1), data(i, 2), vf_voro(i), d_voro(i));
+%         fprintf(fileID, "%d %d %.18f\n", data(i, 1), data(i, 2), vf_voro(i));
+    else
+        fprintf(fileID, "%d %d %.18f %.18f\n", data(i, 2), data(i, 1), vf_voro(i), d_voro(i));
+%         fprintf(fileID, "%d %d %.18f\n", data(i, 2), data(i, 1), vf_voro(i));
+    end
 end
 fclose(fileID);
 
+
+%--------------------------
 figure
 histogram(vf_voro)
+
+
+%--------------------------
+disp(['max distance: ' num2str(max(d_voro))]);
+
+figure
+histogram(d_voro)
+
+
