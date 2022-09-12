@@ -4,7 +4,8 @@ inp_file = "viewfactor_result.dat";
 out_file = "Radiation_InitVF_Prefs.txt";
 
 %% ------------------------------------------------------------------------
-d = 1:0.1:8;
+% 公式1
+d = 2:0.1:8;
 vf = zeros(1,length(d));
 
 fun1 = @(c, d) (2.*c - sin(2.*c)) ./ sqrt(d.*d - 4.*cos(c).*cos(c)) .* sin(2.*c);
@@ -25,12 +26,13 @@ figure
 plot(d, vf, LineWidth=2)
 xlabel 'd'
 ylabel 'vf'
-xlim([1.5 5])
+xlim([1.9 5])
 grid on
 hold on
 
 
 %% ------------------------------------------------------------------------
+% 公式2
 d = 2:0.1:4;
 vf = zeros(1,length(d));
 
@@ -56,11 +58,16 @@ vf_max = 0.5 - 2/pi*integral(@(c) fun2(c, 2), 0, pi/2);
 for i=1:length(d_voro)
     if (d_voro(i) <= 2.0)
         vf_voro(i) = min(vf_voro(i), vf_max);
+    elseif (d_voro(i) >= 3)
+        vf_voro(i) = 0;
     else
         q = integral(@(c) fun2(c, d_voro(i)), 0, pi/2);
         tmp_vf = 0.5 - 2/pi*q;
 
-        vf_voro(i) = min(vf_voro(i), tmp_vf);
+        if (vf_voro(i) > tmp_vf)
+            vf_voro(i) = 0;
+        end
+%         vf_voro(i) = min(vf_voro(i), tmp_vf);
     end
 end
 
@@ -71,6 +78,7 @@ scatter(d_voro, vf_voro, Marker="+", MarkerEdgeColor="Black")
 fileID = fopen(out_file, "w");
 fprintf(fileID, "%d\n", length(d_voro));
 for i=1:length(d_voro)
+%     disp(d_voro);
     if (data(i,1) < data(i,2))
         fprintf(fileID, "%d %d %.18f %.18f\n", data(i, 1), data(i, 2), vf_voro(i), d_voro(i));
 %         fprintf(fileID, "%d %d %.18f\n", data(i, 1), data(i, 2), vf_voro(i));
@@ -85,12 +93,13 @@ fclose(fileID);
 %--------------------------
 figure
 histogram(vf_voro)
-
+title('void fraction')
 
 %--------------------------
 disp(['max distance: ' num2str(max(d_voro))]);
 
 figure
 histogram(d_voro)
+title('distance')
 
 
