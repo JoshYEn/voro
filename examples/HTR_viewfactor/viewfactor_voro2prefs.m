@@ -46,12 +46,14 @@ hold on
 
 
 %% ------------------------------------------------------------------------
+% init radiatioin bed
 data = importdata(inp_file);
 data = data.data(data.data(:,2) > 0, :);
 
-% vf_voro = data(:, 5);
+d_voro  = data(:, 3)./0.03;
 vf_voro = data(:, 4);
-d_voro  = data(:,3)./0.03;
+% vf_voro2 = data(:, 5);
+Ai_voro = data(:, 6);
 
 vf_max = 0.5 - 2/pi*integral(@(c) fun2(c, 2), 0, pi/2);
 
@@ -77,13 +79,14 @@ scatter(d_voro, vf_voro, Marker="+", MarkerEdgeColor="Black")
 
 fileID = fopen(out_file, "w");
 fprintf(fileID, "%d\n", length(d_voro));
+% id1 | id2 | view_factor | distance | surface_area
 for i=1:length(d_voro)
 %     disp(d_voro);
     if (data(i,1) < data(i,2))
-        fprintf(fileID, "%d %d %.18f %.18f\n", data(i, 1), data(i, 2), vf_voro(i), d_voro(i));
+        fprintf(fileID, "%d %d %.18f %.18f %.18f\n", data(i, 1), data(i, 2), vf_voro(i), d_voro(i), Ai_voro(i));
 %         fprintf(fileID, "%d %d %.18f\n", data(i, 1), data(i, 2), vf_voro(i));
     else
-        fprintf(fileID, "%d %d %.18f %.18f\n", data(i, 2), data(i, 1), vf_voro(i), d_voro(i));
+        fprintf(fileID, "%d %d %.18f %.18f %.18f\n", data(i, 2), data(i, 1), vf_voro(i), d_voro(i), Ai_voro(i));
 %         fprintf(fileID, "%d %d %.18f\n", data(i, 2), data(i, 1), vf_voro(i));
     end
 end
