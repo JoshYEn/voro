@@ -1,6 +1,7 @@
 *.dat
 *.txt
 
+*.dSYM
 *.o
 *.a
 
